@@ -1,15 +1,17 @@
+'''
+2025-12-19
+CS562 Database Management Systems II
+Anthony Santilli and Colby Foster
+'''
+
 import sys
 
-'''
-class CFG:
-    # class for CFG object
-    def __init__(self, terminals, variables, substitutions):
-        self.term = terminals
-        self.var = variables
-        self.sub = substitutions
-
-'''
 class mf_structure:
+    '''
+    Class for the mf_structure object containing all attributes of the PHI operator.
+    S, n, V, F, r, G
+    G is default to None unless there is a Having clause.
+    '''
     # class for mf_structure object
     def __init__(self, S, n, V, F, r, G = None):
         self.S = S
@@ -23,8 +25,7 @@ def read_from_file(f):
     '''
     Reads the input file and puts results into MF structure.
     Implies format similar to project description.
-
-    should i put .lower() here?
+    Note for the future, might need to add .lower() here but probably not.
     '''
     with open(f) as the_file:
         lines = the_file.readlines()
@@ -46,13 +47,19 @@ def read_from_file(f):
     return mf_structure(S, n, V, F, r, G)
 
 def split_aggregates(F: list[str], n):
+    '''
+    Split aggregate list based on the grouping vars.
+    s[0] contains all of x's aggregates, s[1] contains all of y's aggregates, etc.
+    '''
+
     s = [[] for _ in range(n)]
     for aggregate in F:
-        print(aggregate)
-        print("Index: " + str(int(aggregate[0]) - 1))
+        # Debug stuff to print out the aggregates, make sure they're formatted right
+        # print(aggregate)
+        # print("Index: " + str(int(aggregate[0]) - 1))
         s[int(aggregate[0]) - 1].append(tuple(aggregate.split("_")))
-    return s
 
+    return s
 
 def print_results(MF: mf_structure):
     '''
@@ -77,7 +84,3 @@ def get_aggregates(F: list[list]):
 
 file = sys.argv[1]
 print_results(read_from_file(file))
-
-'''
-
-'''
