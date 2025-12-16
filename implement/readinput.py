@@ -6,6 +6,19 @@ Anthony Santilli and Colby Foster
 
 import sys
 
+def read_from_input():
+    '''
+    Function to take custom inputs for the mf_structure.
+    Comma-separated for the r vector.
+    '''
+
+    S = input("S (SELECT, comma separated): ").rstrip().split(", ")
+    n = int(input("n (NUMBER OF GROUPS): "))
+    V = input("V (GROUPING VARS, comma separated): ").rstrip().split(", ")
+    F = split_aggregates(input("F (Vector of aggregate functions, comma-separated): ").rstrip().split(", "), n)
+    r = input("r (SUCHTHAT, comma separated): ").rstrip().split(", ")
+    G = input("G (HAVING clause): ").rstrip().split(", ")
+
 class mf_structure:
     '''
     Class for the mf_structure object containing all attributes of the PHI operator.
