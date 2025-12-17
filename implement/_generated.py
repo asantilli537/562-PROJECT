@@ -1,80 +1,4 @@
-import subprocess
 
-
-def main():
-    """
-    This is the generator code. It should take in the MF structure and generate the code
-    needed to run the query. That generated code should be saved to a 
-    file (e.g. _generated.py) and then run.
-    """
-    selectAtts = ["cust", "sum1", "sum2", "sum3", "avg1", "avg2"] # this is S
-    listAggVars = ["cust"] #this is v
-    numGroupVars = 3 # this is n
-    f = [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]] #this is f
-
-    body = f"""
-    listAggVars = {listAggVars}
-    numGroupVars = {numGroupVars}
-    dict = {{}}
-    #dataDict = {{}} just data for the keys not the final value
-    
-    for row in cur: #loop to put all keys in dictionary
-        #_global.append(row)
-        uniqueID = "" # this is gonna be a combination of the agg vars for the dict key
-        for aggVar in listAggVars:
-            uniqueID = uniqueID + row[aggVar]
-        dict[uniqueID] = {{}}
-        for aggVar in range(len(listAggVars)):
-            dict[uniqueID][row[aggVar]] = row[aggVar]
-        for groupVar in range(numGroupVars):
-            for agg in {f}[groupVar]:
-                if agg[1] == "count":
-                    dict[uniqueID]["count" + str(groupVar)] = 0
-                if agg[1] == "sum":
-                    dict[uniqueID]["sum" + str(groupVar)] = 0
-                if agg[1] == "max":
-                    dict[uniqueID]["max" + str(groupVar)] = 0
-                if agg[1] == "min":
-                    dict[uniqueID]["min" + str(groupVar)] = 0
-                if agg[1] == "avg":
-                    dict[uniqueID]["sumAvg" + str(groupVar)] = 0
-                    dict[uniqueID]["countAvg" + str(groupVar)] = 0
-    cur.execute("SELECT * FROM sales")
-    for groupVar in range(numGroupVars): #loop to calculate all the aggregates
-        for row in cur:
-            uniqueID = "" # this is gonna be a combination of the agg vars for the dict key
-            for aggVar in listAggVars:
-                uniqueID = uniqueID + row[aggVar]
-            for agg in {f}[groupVar]:
-                if agg[1] == "count":
-                    dict[uniqueID]["count" + str(groupVar)] += 1
-                if agg[1] == "sum":
-                    dict[uniqueID]["sum" + str(groupVar)] += row[agg[2]]
-                if agg[1] == "max":
-                    if(row[agg[2]] > dict[uniqueID]["max" + str(groupVar)]):
-                        dict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
-                if agg[1] == "min":
-                    if(row[agg[2]] < dict[uniqueID]["max" + str(groupVar)]):
-                        dict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
-                if agg[1] == "avg":
-                    dict[uniqueID]["sumAvg" + str(groupVar)] += row[agg[2]]
-                    dict[uniqueID]["countAvg" + str(groupVar)] += 1
-        cur.execute("SELECT * FROM sales")
-        
-    for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in dict
-        for agg in {f}[groupVar]:
-            for uniqueID in list(dict.keys()):
-                if agg[1] == "avg":
-                        dict[uniqueID]["avg" + str(groupVar)] =  dict[uniqueID]["sumAvg" + str(groupVar)] / dict[uniqueID]["countAvg" + str(groupVar)]
-                        del dict[uniqueID]["sumAvg" + str(groupVar)]
-                        del dict[uniqueID]["countAvg" + str(groupVar)]
-                
-    print(dict.keys())
-    """
-
-    # Note: The f allows formatting with variables.
-    #       Also, note the indentation is preserved.
-    tmp = f"""
 import os
 import psycopg2
 import psycopg2.extras
@@ -96,12 +20,70 @@ def query():
     cur.execute("SELECT * FROM sales")
     
     _global = []
-    {body}
+    
+    listAggVars = ['cust']
+    numGroupVars = 3
+    dict = {}
+    #dataDict = {} just data for the keys not the final value
+    
+    for row in cur: #loop to put all keys in dictionary
+        #_global.append(row)
+        uniqueID = "" # this is gonna be a combination of the agg vars for the dict key
+        for aggVar in listAggVars:
+            uniqueID = uniqueID + row[aggVar]
+        dict[uniqueID] = {}
+        for aggVar in range(len(listAggVars)):
+            dict[uniqueID][row[aggVar]] = row[aggVar]
+        for groupVar in range(numGroupVars):
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
+                if agg[1] == "count":
+                    dict[uniqueID]["count" + str(groupVar)] = 0
+                if agg[1] == "sum":
+                    dict[uniqueID]["sum" + str(groupVar)] = 0
+                if agg[1] == "max":
+                    dict[uniqueID]["max" + str(groupVar)] = 0
+                if agg[1] == "min":
+                    dict[uniqueID]["min" + str(groupVar)] = 0
+                if agg[1] == "avg":
+                    dict[uniqueID]["sumAvg" + str(groupVar)] = 0
+                    dict[uniqueID]["countAvg" + str(groupVar)] = 0
+    cur.execute("SELECT * FROM sales")
+    for groupVar in range(numGroupVars): #loop to calculate all the aggregates
+        for row in cur:
+            uniqueID = "" # this is gonna be a combination of the agg vars for the dict key
+            for aggVar in listAggVars:
+                uniqueID = uniqueID + row[aggVar]
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
+                if agg[1] == "count":
+                    dict[uniqueID]["count" + str(groupVar)] += 1
+                if agg[1] == "sum":
+                    dict[uniqueID]["sum" + str(groupVar)] += row[agg[2]]
+                if agg[1] == "max":
+                    if(row[agg[2]] > dict[uniqueID]["max" + str(groupVar)]):
+                        dict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                if agg[1] == "min":
+                    if(row[agg[2]] < dict[uniqueID]["max" + str(groupVar)]):
+                        dict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                if agg[1] == "avg":
+                    dict[uniqueID]["sumAvg" + str(groupVar)] += row[agg[2]]
+                    dict[uniqueID]["countAvg" + str(groupVar)] += 1
+        cur.execute("SELECT * FROM sales")
+        
+    for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in dict
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
+            for uniqueID in list(dict.keys()):
+                if agg[1] == "avg":
+                        dict[uniqueID]["avg" + str(groupVar)] =  dict[uniqueID]["sumAvg" + str(groupVar)] / dict[uniqueID]["countAvg" + str(groupVar)]
+                        del dict[uniqueID]["sumAvg" + str(groupVar)]
+                        del dict[uniqueID]["countAvg" + str(groupVar)]
+                
+    print(dict.keys())
+    
     for x in list(dict.values()):
         _global.append(list(x.values()))
     
     return tabulate.tabulate(_global,
-                        headers={selectAtts}, tablefmt="postgres")
+                        headers=['cust', 'sum1', 'sum2', 'sum3', 'avg1', 'avg2'], tablefmt="postgres")
 
 def main():
     print(query())
@@ -109,13 +91,4 @@ def main():
     
 if "__main__" == __name__:
     main()
-    """
-
-    # Write the generated code to a file
-    open("_generated.py", "w").write(tmp)
-    # Execute the generated code
-    #subprocess.run(["python", "_generated.py"])
-
-
-if "__main__" == __name__:
-    main()
+    

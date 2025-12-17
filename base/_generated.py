@@ -14,8 +14,8 @@ def query():
     password = os.getenv('PASSWORD')
     dbname = os.getenv('DBNAME')
 
-    conn = psycopg2.connect("dbname="+dbname+" user="+user+" password="+password,
-                            cursor_factory=psycopg2.extras.DictCursor)
+    conn = psycopg2.connect("dbname="+dbname+" user="+"ubuntu"+" password="+"ubuntu",
+                            cursor_factory=psycopg2.extras.DictCursor, port=5432)
     cur = conn.cursor()
     cur.execute("SELECT * FROM sales")
     
