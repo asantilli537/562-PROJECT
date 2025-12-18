@@ -40,7 +40,7 @@ def query():
     }
 
     
-    for row in cur: #loop to put all keys in dictionary
+    for row in cur: # loop to put all keys in dictionary
         #_global.append(row)
         uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
         for aggVar in listAggVars:
