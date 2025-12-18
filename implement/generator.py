@@ -18,22 +18,24 @@ def format_conditionals(r):
     '''
     tmp = []
     for st in list(r):
-        tmpstring = (re.sub(r'(?<![<>=!])=(?![=])', '==', st))
+        tmpstring = (re.sub(r'(?<![<>=!])=(?![=])', '==', st))  # if we have an isolated =, turn it to ==
         tmpstring = tmpstring.split(" ")
         first = int(tmpstring[0].split(".")[0])
         attr = tmpstring[0].split(".")[1]
         if first - 1 in range(len(r)):
+            # Groupvar should always agree because it'll always run according to the grouping var it's on, but it's here anyway
             tmp.append("groupVar == " + str(first - 1) + " and " + "(row[ATTRIBUTE_INDEX['" + attr + "']]) == " + str(tmpstring[2]))
         else:
+            # in case a conditional falls outside the number of grouping vars
             raise Exception("format_conditionals: " + str(first - 1) + " not in range.")
     
     final = tmp[0]
     for c in tmp[1:]:
         final += " or " + c
-    return final
+    return final # this was MUCH faster than using eval()
 
 def main():
-    file = sys.argv[1]
+    file = sys.argv[1] # read argument
     MF_str = (read_from_file(file))
     """
     This is the generator code. It should take in the MF structure and generate the code
@@ -68,7 +70,7 @@ def main():
     }}
 
     
-    for row in cur: #loop to put all keys in dictionary
+    for row in cur: # loop to put all keys in dictionary
         #_global.append(row)
         uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
         for aggVar in listAggVars:
