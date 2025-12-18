@@ -55,7 +55,11 @@ def read_from_file(f):
             r.append(lines[i].rstrip())
             i += 1
         
-        G = lines[i].rstrip()
+        tmp_G = lines[i].rstrip()
+        if tmp_G != "NONE":
+            G = tmp_G
+        else:
+            G = None
     
     return mf_structure(S, n, V, F, r, G)
 
@@ -90,10 +94,3 @@ Take the filename as a command-line argument.
 This can be adjusted depending on how the input's taken,
 but it's based on the first example from the project page.
 '''
-
-def get_aggregates(F: list[list]):
-    for aggregate in F:
-        pass
-
-file = sys.argv[1]
-print_results(read_from_file(file))
