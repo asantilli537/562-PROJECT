@@ -24,7 +24,7 @@ def query():
     listAggVars = ['cust']
     numGroupVars = 3
     suchthat = ["1.state = 'NY'", "2.state = 'NJ'", "3.state = 'CT'"]
-    # having = None
+    # having = 1_sum_quant >  2_sum_quant * 2 or 1_avg_quant > 3_avg_quant
     rowDict = {}  # renamed to rowDict from dict
     #dataDict = {} just data for the keys not the final value
 
@@ -50,25 +50,26 @@ def query():
         grpList = []     # list of the grouping variables' indices
         for get_var in listAggVars:
             grpList.append(ATTRIBUTE_INDEX[get_var])    # turn them into indices so we can pass them over to the aggregates
+            rowDict[uniqueID][get_var] = row[ATTRIBUTE_INDEX[get_var]]
             # print(grpList)
         
-        for index in grpList:   # grouping vars
-            # print(str(index) + ": ADD " + str(row[index]))
-            rowDict[uniqueID][row[index]] = row[index]   # replaced with index
+        # for index in grpList:   # grouping vars
+        #     # print(str(index) + ": ADD " + str(row[index]))
+        #     rowDict[uniqueID][row[index]] = row[index]   # replaced with index
 
         for groupVar in range(numGroupVars):   # for group in n
-            for agg in [[('1', 'max', 'quant')], [('2', 'max', 'quant')], [('3', 'max', 'quant')]][groupVar]:
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
                 if agg[1] == "count":
-                    rowDict[uniqueID]["count" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] = 0
                 if agg[1] == "sum":
-                    rowDict[uniqueID]["sum" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] = 0
                 if agg[1] == "max":
-                    rowDict[uniqueID]["max" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = 0
                 if agg[1] == "min":
-                    rowDict[uniqueID]["min" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = 0
                 if agg[1] == "avg":
-                    rowDict[uniqueID]["sumAvg" + str(groupVar)] = 0
-                    rowDict[uniqueID]["countAvg" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] = 0
 
                                         
     cur.execute("SELECT * FROM sales")
@@ -81,33 +82,52 @@ def query():
             for aggVar in listAggVars:
                 uniqueID = uniqueID + row[aggVar]
 
-            for agg in [[('1', 'max', 'quant')], [('2', 'max', 'quant')], [('3', 'max', 'quant')]][groupVar]:
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
                 if groupVar == 0 and (row[ATTRIBUTE_INDEX['state']]) == 'NY' or groupVar == 1 and (row[ATTRIBUTE_INDEX['state']]) == 'NJ' or groupVar == 2 and (row[ATTRIBUTE_INDEX['state']]) == 'CT':   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
-                        rowDict[uniqueID]["count" + str(groupVar)] += 1
+                        rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
                     if agg[1] == "sum":
-                        rowDict[uniqueID]["sum" + str(groupVar)] += row[agg[2]]
+                        rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
                     if agg[1] == "max":
-                        if(row[agg[2]] > rowDict[uniqueID]["max" + str(groupVar)]):
-                            rowDict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                        if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
                     if agg[1] == "min":
-                        if(row[agg[2]] < rowDict[uniqueID]["max" + str(groupVar)]):
-                            rowDict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                        if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
                     if agg[1] == "avg":
-                        rowDict[uniqueID]["sumAvg" + str(groupVar)] += row[agg[2]]
-                        rowDict[uniqueID]["countAvg" + str(groupVar)] += 1
+                        rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
+                        rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
 
         cur.execute("SELECT * FROM sales")
         
 
     for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in rowDict`
-        for agg in [[('1', 'max', 'quant')], [('2', 'max', 'quant')], [('3', 'max', 'quant')]][groupVar]:
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
-                        rowDict[uniqueID]["avg" + str(groupVar)] =  rowDict[uniqueID]["sumAvg" + str(groupVar)] / rowDict[uniqueID]["countAvg" + str(groupVar)]
-                        del rowDict[uniqueID]["sumAvg" + str(groupVar)]
-                        del rowDict[uniqueID]["countAvg" + str(groupVar)]
-                
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+    for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
+            for uniqueID in list(rowDict.keys()): 
+                #print(list(rowDict[uniqueID].keys()))
+                if not (rowDict[uniqueID]['1_sum_quant'] >  rowDict[uniqueID]['2_sum_quant'] * 2 or rowDict[uniqueID]['1_avg_quant'] > rowDict[uniqueID]['3_avg_quant']):
+                    #print("it happened")
+                    del rowDict[uniqueID]
+    for groupVar in range(numGroupVars): # NEED ANOTHER SEREIS OF LOOP FOR NO ERROR
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
+            for uniqueID in list(rowDict.keys()): 
+                if not ((str(groupVar + 1) + "_count_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_count_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_sum_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_sum_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_max_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_max_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_min_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_avg_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
     print(rowDict.keys())
 
     
@@ -123,7 +143,7 @@ def query():
         _global.append(list(x.values()))
     
     return tabulate.tabulate(_global,
-                        headers=['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant'], tablefmt="postgres")
+                        headers=list(sd[list(sd.keys())[0]].keys()), tablefmt="postgres")
 
 def main():
     print(query())

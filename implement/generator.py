@@ -10,7 +10,7 @@ needs to have spaces between characters, and this is how format_conditionals() o
 
 def format_conditionals(r):
     '''
-    Formats the conditionals of our r clause into python-readable form
+    Formats the such-that of our r clause into python-readable form
     this one assumes suchthat clause, in the format of 'NUMBER.attribute = something'
 
     Noticed that the queries are in MF style, no "x.cust = cust" yet, and the aggregate
@@ -34,6 +34,21 @@ def format_conditionals(r):
         final += " or " + c
     return final # this was MUCH faster than using eval()
 
+
+def format_conditionals2(data, listAggVars, combineList):
+    tempList = []
+    for x in combineList:
+        for y in x:
+            tempList.append(y[0] + "_" + y[1] + "_"+ y[2])
+    #print(tempList)
+    
+    temp = data
+    for substring in tempList:
+        if substring in temp:
+            temp = temp.replace(substring, "rowDict[uniqueID]['" + substring + "']")
+            #print(temp)
+    return temp
+
 def main():
     file = sys.argv[1] # read argument
     MF_str = (read_from_file(file))
@@ -42,13 +57,14 @@ def main():
     needed to run the query. That generated code should be saved to a 
     file (e.g. _generated.py) and then run.
     """
-    selectAtts = ["cust", "1_sum_quant", "2_sum_quant", "3_sum_quant"]
+    selectAtts = MF_str.S
     listAggVars = MF_str.V #this is v
     numGroupVars = MF_str.n # this is n
     f = MF_str.F #this is f
     suchthat = MF_str.r
     having = MF_str.G
     condList = format_conditionals(suchthat)
+    condList2 = format_conditionals2(having, listAggVars, f)
 
     body = f"""
     listAggVars = {listAggVars}
@@ -80,25 +96,26 @@ def main():
         grpList = []     # list of the grouping variables' indices
         for get_var in listAggVars:
             grpList.append(ATTRIBUTE_INDEX[get_var])    # turn them into indices so we can pass them over to the aggregates
+            rowDict[uniqueID][get_var] = row[ATTRIBUTE_INDEX[get_var]]
             # print(grpList)
         
-        for index in grpList:   # grouping vars
-            # print(str(index) + ": ADD " + str(row[index]))
-            rowDict[uniqueID][row[index]] = row[index]   # replaced with index
+        # for index in grpList:   # grouping vars
+        #     # print(str(index) + ": ADD " + str(row[index]))
+        #     rowDict[uniqueID][row[index]] = row[index]   # replaced with index
 
         for groupVar in range(numGroupVars):   # for group in n
             for agg in {f}[groupVar]:
                 if agg[1] == "count":
-                    rowDict[uniqueID]["count" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] = 0
                 if agg[1] == "sum":
-                    rowDict[uniqueID]["sum" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] = 0
                 if agg[1] == "max":
-                    rowDict[uniqueID]["max" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = 0
                 if agg[1] == "min":
-                    rowDict[uniqueID]["min" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = 0
                 if agg[1] == "avg":
-                    rowDict[uniqueID]["sumAvg" + str(groupVar)] = 0
-                    rowDict[uniqueID]["countAvg" + str(groupVar)] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] = 0
 
                                         
     cur.execute("SELECT * FROM sales")
@@ -114,18 +131,18 @@ def main():
             for agg in {f}[groupVar]:
                 if {condList}:   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
-                        rowDict[uniqueID]["count" + str(groupVar)] += 1
+                        rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
                     if agg[1] == "sum":
-                        rowDict[uniqueID]["sum" + str(groupVar)] += row[agg[2]]
+                        rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
                     if agg[1] == "max":
-                        if(row[agg[2]] > rowDict[uniqueID]["max" + str(groupVar)]):
-                            rowDict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                        if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
                     if agg[1] == "min":
-                        if(row[agg[2]] < rowDict[uniqueID]["max" + str(groupVar)]):
-                            rowDict[uniqueID]["max" + str(groupVar)] = row[agg[2]]
+                        if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
                     if agg[1] == "avg":
-                        rowDict[uniqueID]["sumAvg" + str(groupVar)] += row[agg[2]]
-                        rowDict[uniqueID]["countAvg" + str(groupVar)] += 1
+                        rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
+                        rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
 
         cur.execute("SELECT * FROM sales")
         
@@ -134,10 +151,29 @@ def main():
         for agg in {f}[groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
-                        rowDict[uniqueID]["avg" + str(groupVar)] =  rowDict[uniqueID]["sumAvg" + str(groupVar)] / rowDict[uniqueID]["countAvg" + str(groupVar)]
-                        del rowDict[uniqueID]["sumAvg" + str(groupVar)]
-                        del rowDict[uniqueID]["countAvg" + str(groupVar)]
-                
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+    for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
+        for agg in {f}[groupVar]:  
+            for uniqueID in list(rowDict.keys()): 
+                #print(list(rowDict[uniqueID].keys()))
+                if not ({condList2}):
+                    #print("it happened")
+                    del rowDict[uniqueID]
+    for groupVar in range(numGroupVars): # NEED ANOTHER SEREIS OF LOOP FOR NO ERROR
+        for agg in {f}[groupVar]:  
+            for uniqueID in list(rowDict.keys()): 
+                if not ((str(groupVar + 1) + "_count_" + agg[2]) in {selectAtts}):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_count_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_sum_" + agg[2]) in {selectAtts}):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_sum_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_max_" + agg[2]) in {selectAtts}):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_max_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_min_" + agg[2]) in {selectAtts}):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
+                if not ((str(groupVar + 1) + "_avg_" + agg[2]) in {selectAtts}):
+                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
     print(rowDict.keys())
 
     
@@ -179,7 +215,7 @@ def query():
         _global.append(list(x.values()))
     
     return tabulate.tabulate(_global,
-                        headers={selectAtts}, tablefmt="postgres")
+                        headers=list(sd[list(sd.keys())[0]].keys()), tablefmt="postgres")
 
 def main():
     print(query())
