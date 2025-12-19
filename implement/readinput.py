@@ -13,11 +13,18 @@ def read_from_input():
     '''
 
     S = input("S (SELECT, comma separated): ").rstrip().split(", ")
+    print(S)
     n = int(input("n (NUMBER OF GROUPS): "))
+    print(n)
     V = input("V (GROUPING VARS, comma separated): ").rstrip().split(", ")
+    print(V)
     F = split_aggregates(input("F (Vector of aggregate functions, comma-separated): ").rstrip().split(", "), n)
+    print(F)
     r = input("r (SUCHTHAT, comma separated): ").rstrip().split(", ")
+    print(r)
     G = input("G (HAVING clause): ").rstrip().split(", ")
+    print(G)
+    return mf_structure(S, n, V, F, r, G)
 
 class mf_structure:
     '''

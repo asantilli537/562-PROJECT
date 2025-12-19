@@ -1,41 +1,15 @@
 import subprocess
 import re
 import sys
-from readinput import print_results, read_from_file, mf_structure
+from readinput import print_results, read_from_file, read_from_input, mf_structure
 
 '''
 For the file inputs of mf_example, i'm also going to say that the SUCHTHAT
 needs to have spaces between characters, and this is how format_conditionals() operates.
 '''
 
-def format_conditionals(r):
-    '''
-    Formats the such-that of our r clause into python-readable form
-    this one assumes suchthat clause, in the format of 'NUMBER.attribute = something'
 
-    Noticed that the queries are in MF style, no "x.cust = cust" yet, and the aggregate
-    calculations seems to occur MF style
-    '''
-    tmp = []
-    for st in list(r):
-        tmpstring = (re.sub(r'(?<![<>=!])=(?![=])', '==', st))  # if we have an isolated =, turn it to ==
-        tmpstring = tmpstring.split(" ")
-        # print(tmpstring)
-        first = int(tmpstring[0].split(".")[0])
-        attr = tmpstring[0].split(".")[1]
-        if first - 1 in range(len(r)):
-            # Groupvar should always agree because it'll always run according to the grouping var it's on, but it's here anyway
-            tmp.append("groupVar == " + str(first - 1) + " and " + "(row[ATTRIBUTE_INDEX['" + attr + "']]) == " + str(tmpstring[2]))
-        else:
-            # in case a conditional falls outside the number of grouping vars
-            raise Exception("format_conditionals: " + str(first - 1) + " not in range.")
-    
-    final = tmp[0]
-    for c in tmp[1:]:
-        final += " or " + c
-    return final # this was MUCH faster than using eval()
-
-def format_suchthat(suchthat, F_list):
+def format_suchthat(suchthat, F_list, attrs):
     '''
     Format the suchthat list into a conditional to be processed.
 
@@ -43,23 +17,33 @@ def format_suchthat(suchthat, F_list):
     print("SUCHTHAT: " + str(suchthat))
     finalList = ""
     tmplist = []
+    condlist = []
 
     aggList = return_aggregates(F_list)
 
     for st in list(suchthat): # for every string in the suchthat list
         tmpstring = (re.sub(r'(?<![<>=!])=(?![=])', '==', st)) # turn any isolated = into ==
         condstring = tmpstring.split(" ")
+        othertmp = []
         for substring in condstring:
             if "." in substring:
                 first = int(substring.split(".")[0])
                 attr = substring.split(".")[1]
-                tmpstring = tmpstring.replace(substring, "row[ATTRIBUTE_INDEX['" + attr + "']]")
+                substring = "row[ATTRIBUTE_INDEX['" + attr + "']]"
+            else:
+                if substring in attrs:
+                    substring = "rowDict[uniqueID]['" + substring + "']"
+            othertmp.append(substring)
+            finalstr = " ".join(othertmp)
+            print("FINALSTR: " + finalstr)
+            condlist.append(finalstr)
+
 
         for aggName in aggList:
             if aggName in st:
                 st = st.replace(substring, "rowDict[uniqueID]['" + substring + "']")
         
-        tmpstring = "groupVar == " + str(first - 1) + " and (" + tmpstring + ")"
+        tmpstring = "groupVar == " + str(first - 1) + " and (" + finalstr + ")"
         tmplist.append(tmpstring)
 
     finalList = tmplist[0]
@@ -96,7 +80,10 @@ def format_having(data, listAggVars, F_list):
 
 def main():
     file = sys.argv[1] # read argument
-    MF_str = (read_from_file(file))
+    if file == 'INPUT':
+        MF_str = read_from_input()
+    else:
+        MF_str = (read_from_file(file))
     """
     This is the generator code. It should take in the MF structure and generate the code
     needed to run the query. That generated code should be saved to a 
@@ -119,7 +106,7 @@ def main():
     suchthat = MF_str.r
     print("SUCHTHAT: " + str(suchthat))
     having = MF_str.G
-    suchThatList = format_suchthat(suchthat, f)
+    suchThatList = format_suchthat(suchthat, f, list(ATTRIBUTE_INDEX.keys()))
     print("FULL SUCHTHAT: " + str(suchThatList))
     havingList = format_having(having, listAggVars, f)
 
