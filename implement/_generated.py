@@ -23,7 +23,7 @@ def query():
     
     listAggVars = ['cust']
     numGroupVars = 3
-    suchthat = ['2.month <= 6  and 2.quant > 1_max_quant / 2', '3.month >= 7  and 3.quant > 1_max_quant / 2']
+    suchthat = ['2.month <= 6  and 2.quant > 1_avg_quant', '3.month >= 7  and 3.quant > 1_avg_quant']
     # having = None
     rowDict = {}  # renamed to rowDict from dict
     #dataDict = {} just data for the keys not the final value
@@ -73,7 +73,7 @@ def query():
                 uniqueID = uniqueID + row[aggVar]
 
             for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:
-                if groupVar == 1 and (row[ATTRIBUTE_INDEX['month']] <= 6  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_max_quant'] / 2) or groupVar == 2 and (row[ATTRIBUTE_INDEX['month']] >= 7  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_max_quant'] / 2):   # where the conditional happens, grouped up by grouping vars
+                if groupVar == 1 and (row[ATTRIBUTE_INDEX['month']] <= 6  and row[ATTRIBUTE_INDEX['quant']] > 1_avg_quant) or groupVar == 2 and (row[ATTRIBUTE_INDEX['month']] >= 7  and row[ATTRIBUTE_INDEX['quant']] > 1_avg_quant):   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
                         rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
                     if agg[1] == "sum":
@@ -88,12 +88,13 @@ def query():
                         rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                         rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
         
-        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
+        for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+        
 
         cur.execute("SELECT * FROM sales")
     
