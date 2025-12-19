@@ -87,17 +87,15 @@ def query():
                     if agg[1] == "avg":
                         rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                         rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
-
-        cur.execute("SELECT * FROM sales")
         
-
-    for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in rowDict`
-        for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+
+        cur.execute("SELECT * FROM sales")
     
     for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
         for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:  

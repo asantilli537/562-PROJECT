@@ -14,7 +14,7 @@ def format_suchthat(suchthat, F_list, attrs):
     Format the suchthat list into a conditional to be processed.
 
     '''
-    print("SUCHTHAT: " + str(suchthat))
+    #print("SUCHTHAT: " + str(suchthat))
     finalList = ""
     tmplist = []
     condlist = []
@@ -35,7 +35,7 @@ def format_suchthat(suchthat, F_list, attrs):
                     substring = "rowDict[uniqueID]['" + substring + "']"
             othertmp.append(substring)
             finalstr = " ".join(othertmp)
-            # print("FINALSTR: " + finalstr)
+            #print("FINALSTR: " + finalstr)
             condlist.append(finalstr)
         
         tmpstring = "groupVar == " + str(first - 1) + " and (" + finalstr + ")"
@@ -67,12 +67,22 @@ def format_having(data, listAggVars, F_list):
         return True  # if there's no having, skip checking it
     tempList = return_aggregates(F_list)
     
-    temp = data
-    for substring in tempList:
-        if substring in temp:
-            temp = temp.replace(substring, "rowDict[uniqueID]['" + substring + "']")
+    result = data
+    for substring in tempList: # get the 1_avg_quant stuff
+        if substring in result:
+            result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
             #print(temp)
-    return temp
+            
+            
+    for substring in listAggVars: #get the grouping atts like cust and whatever else
+        if substring in result:
+            result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
+    
+    result = (re.sub(r'(?<![<>=!])=(?![=])', '==', result)) # turn any isolated = into ==
+    
+    print(result)
+    
+    return result
 
 def main():
     file = sys.argv[1] # read argument
@@ -100,10 +110,10 @@ def main():
     numGroupVars = MF_str.n # this is n
     f = MF_str.F #this is f
     suchthat = MF_str.r
-    # print("SUCHTHAT: " + str(suchthat))
+    #print("SUCHTHAT: " + str(suchthat))
     having = MF_str.G
     suchThatList = format_suchthat(suchthat, f, list(ATTRIBUTE_INDEX.keys()))
-    # print("FULL SUCHTHAT: " + str(suchThatList))
+    #print("FULL SUCHTHAT: " + str(suchThatList))
     havingList = format_having(having, listAggVars, f)
 
     body = f"""
@@ -173,17 +183,16 @@ def main():
                     if agg[1] == "avg":
                         rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                         rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
-
-        cur.execute("SELECT * FROM sales")
         
-
-    for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in rowDict`
         for agg in {f}[groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+        
+
+        cur.execute("SELECT * FROM sales")
     
     for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
         for agg in {f}[groupVar]:  
