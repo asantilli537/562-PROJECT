@@ -130,7 +130,7 @@ def main():
         #_global.append(row)
         uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
         for aggVar in listAggVars:
-            uniqueID = uniqueID + row[aggVar]
+            uniqueID = uniqueID + str(row[aggVar])
         rowDict[uniqueID] = {{}}
 
         grpList = []     # list of the grouping variables' indices
