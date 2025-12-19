@@ -31,17 +31,12 @@ def format_suchthat(suchthat, F_list, attrs):
                 attr = substring.split(".")[1]
                 substring = "row[ATTRIBUTE_INDEX['" + attr + "']]"
             else:
-                if substring in attrs:
+                if substring in attrs or substring in aggList:
                     substring = "rowDict[uniqueID]['" + substring + "']"
             othertmp.append(substring)
             finalstr = " ".join(othertmp)
-            print("FINALSTR: " + finalstr)
+            # print("FINALSTR: " + finalstr)
             condlist.append(finalstr)
-
-
-        for aggName in aggList:
-            if aggName in st:
-                st = st.replace(substring, "rowDict[uniqueID]['" + substring + "']")
         
         tmpstring = "groupVar == " + str(first - 1) + " and (" + finalstr + ")"
         tmplist.append(tmpstring)
@@ -50,6 +45,7 @@ def format_suchthat(suchthat, F_list, attrs):
     for c in tmplist[1:]:
         finalList += " or " + c
 
+    print(finalList)
     return finalList
 
 def return_aggregates(F):
@@ -104,10 +100,10 @@ def main():
     numGroupVars = MF_str.n # this is n
     f = MF_str.F #this is f
     suchthat = MF_str.r
-    print("SUCHTHAT: " + str(suchthat))
+    # print("SUCHTHAT: " + str(suchthat))
     having = MF_str.G
     suchThatList = format_suchthat(suchthat, f, list(ATTRIBUTE_INDEX.keys()))
-    print("FULL SUCHTHAT: " + str(suchThatList))
+    # print("FULL SUCHTHAT: " + str(suchThatList))
     havingList = format_having(having, listAggVars, f)
 
     body = f"""
@@ -192,9 +188,9 @@ def main():
     for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
         for agg in {f}[groupVar]:  
             for uniqueID in list(rowDict.keys()): 
-                print(list(rowDict[uniqueID].keys()))
+                # print(list(rowDict[uniqueID].keys()))
                 if not ({havingList}):
-                    print("it happened")
+                    # print("it happened")
                     del rowDict[uniqueID]
             
     for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
