@@ -130,7 +130,7 @@ def main():
         #_global.append(row)
         uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
         for aggVar in listAggVars:
-            uniqueID = uniqueID + row[aggVar]
+            uniqueID = uniqueID + str(row[aggVar])
         rowDict[uniqueID] = {{}}
 
         grpList = []     # list of the grouping variables' indices
@@ -167,7 +167,7 @@ def main():
         for row in cur:
             uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
             for aggVar in listAggVars:
-                uniqueID = uniqueID + row[aggVar]
+                uniqueID = uniqueID + str(row[aggVar])
 
             for agg in {f}[groupVar]:
                 if {suchThatList}:   # where the conditional happens, grouped up by grouping vars

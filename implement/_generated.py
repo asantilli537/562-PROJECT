@@ -23,7 +23,7 @@ def query():
     
     listAggVars = ['cust']
     numGroupVars = 3
-    suchthat = ["1.cust = cust and 1.state = 'NY' and 1.quant < 10", "2.cust = cust and 2.state = 'NJ' and 2.quant < 10", "3.cust = cust and 3.state = 'CT' and 3.quant < 10"]
+    suchthat = ["1.state = 'NY' and 1.quant < 10", "2.state = 'NJ' and 2.quant < 10", "3.state = 'CT' and 3.quant < 10"]
     # having = None
     rowDict = {}  # renamed to rowDict from dict
     #dataDict = {} just data for the keys not the final value
@@ -69,24 +69,26 @@ def query():
     
     for groupVar in range(numGroupVars): #loop, for group in n, to calculate all the aggregates
         for row in cur:
+            uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
+            for aggVar in listAggVars:
+                uniqueID = uniqueID + str(row[aggVar])
 
             for agg in [[('1', 'max', 'quant')], [('2', 'max', 'quant')], [('3', 'max', 'quant')]][groupVar]:
-                for uniqueID in list(rowDict.keys()):
-                    if groupVar == 0 and (row[ATTRIBUTE_INDEX['cust']] == rowDict[uniqueID]['cust'] and row[ATTRIBUTE_INDEX['state']] == 'NY' and row[ATTRIBUTE_INDEX['quant']] < 10) or groupVar == 1 and (row[ATTRIBUTE_INDEX['cust']] == rowDict[uniqueID]['cust'] and row[ATTRIBUTE_INDEX['state']] == 'NJ' and row[ATTRIBUTE_INDEX['quant']] < 10) or groupVar == 2 and (row[ATTRIBUTE_INDEX['cust']] == rowDict[uniqueID]['cust'] and row[ATTRIBUTE_INDEX['state']] == 'CT' and row[ATTRIBUTE_INDEX['quant']] < 10):   # where the conditional happens, grouped up by grouping vars
-                        if agg[1] == "count":
-                            rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
-                        if agg[1] == "sum":
-                            rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
-                        if agg[1] == "max":
-                            if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
-                                rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
-                        if agg[1] == "min":
-                            if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
-                                rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
-                        if agg[1] == "avg":
-                            rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
-                            rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
-            
+                if groupVar == 0 and (row[ATTRIBUTE_INDEX['state']] == 'NY' and row[ATTRIBUTE_INDEX['quant']] < 10) or groupVar == 1 and (row[ATTRIBUTE_INDEX['state']] == 'NJ' and row[ATTRIBUTE_INDEX['quant']] < 10) or groupVar == 2 and (row[ATTRIBUTE_INDEX['state']] == 'CT' and row[ATTRIBUTE_INDEX['quant']] < 10):   # where the conditional happens, grouped up by grouping vars
+                    if agg[1] == "count":
+                        rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
+                    if agg[1] == "sum":
+                        rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
+                    if agg[1] == "max":
+                        if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
+                    if agg[1] == "min":
+                        if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
+                            rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
+                    if agg[1] == "avg":
+                        rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
+                        rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
+        
         for agg in [[('1', 'max', 'quant')], [('2', 'max', 'quant')], [('3', 'max', 'quant')]][groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
