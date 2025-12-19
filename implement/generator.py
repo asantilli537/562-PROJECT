@@ -156,6 +156,7 @@ def main():
                 if agg[1] == "avg":
                     rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] = 0
                     rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
 
                                         
     cur.execute("SELECT * FROM sales")
@@ -187,9 +188,14 @@ def main():
         for agg in {f}[groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
+                    #print("here")
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]])
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]])
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]])
+                    #print("there")
         
 
         cur.execute("SELECT * FROM sales")

@@ -14,7 +14,7 @@ def format_suchthat(suchthat, F_list, attrs):
     Format the suchthat list into a conditional to be processed.
 
     '''
-    print("SUCHTHAT: " + str(suchthat))
+    #print("SUCHTHAT: " + str(suchthat))
     finalList = ""
     tmplist = []
     condlist = []
@@ -31,17 +31,12 @@ def format_suchthat(suchthat, F_list, attrs):
                 attr = substring.split(".")[1]
                 substring = "row[ATTRIBUTE_INDEX['" + attr + "']]"
             else:
-                if substring in attrs:
+                if substring in attrs or substring in aggList:
                     substring = "rowDict[uniqueID]['" + substring + "']"
             othertmp.append(substring)
             finalstr = " ".join(othertmp)
-            print("FINALSTR: " + finalstr)
+            #print("FINALSTR: " + finalstr)
             condlist.append(finalstr)
-
-
-        for aggName in aggList:
-            if aggName in st:
-                st = st.replace(substring, "rowDict[uniqueID]['" + substring + "']")
         
         tmpstring = "groupVar == " + str(first - 1) + " and (" + finalstr + ")"
         tmplist.append(tmpstring)
@@ -50,6 +45,7 @@ def format_suchthat(suchthat, F_list, attrs):
     for c in tmplist[1:]:
         finalList += " or " + c
 
+    print(finalList)
     return finalList
 
 def return_aggregates(F):
@@ -64,7 +60,7 @@ def return_aggregates(F):
             tempList.append(y[0] + "_" + y[1] + "_"+ y[2])
     return tempList
 
-def format_having(data, listAggVars, F_list, attIndex):
+def format_having(data, listAggVars, F_list):
     # takes having clause and F list
     if data == None:
         # print("NO HAVING HERE")
@@ -77,11 +73,14 @@ def format_having(data, listAggVars, F_list, attIndex):
             result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
             #print(temp)
             
-    for substring in list(attIndex.keys()): #get the grouping atts like cust and whatever else
+            
+    for substring in listAggVars: #get the grouping atts like cust and whatever else
         if substring in result:
             result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
     
     result = (re.sub(r'(?<![<>=!])=(?![=])', '==', result)) # turn any isolated = into ==
+    
+    print(result)
     
     return result
 
@@ -111,11 +110,11 @@ def main():
     numGroupVars = MF_str.n # this is n
     f = MF_str.F #this is f
     suchthat = MF_str.r
-    print("SUCHTHAT: " + str(suchthat))
+    #print("SUCHTHAT: " + str(suchthat))
     having = MF_str.G
     suchThatList = format_suchthat(suchthat, f, list(ATTRIBUTE_INDEX.keys()))
-    print("FULL SUCHTHAT: " + str(suchThatList))
-    havingList = format_having(having, listAggVars, f, ATTRIBUTE_INDEX)
+    #print("FULL SUCHTHAT: " + str(suchThatList))
+    havingList = format_having(having, listAggVars, f)
 
     body = f"""
     listAggVars = {listAggVars}
@@ -157,8 +156,8 @@ def main():
                 if agg[1] == "avg":
                     rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] = 0
                     rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] = 0
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
 
-    print(rowDict)
                                         
     cur.execute("SELECT * FROM sales")
 
@@ -166,43 +165,45 @@ def main():
     
     for groupVar in range(numGroupVars): #loop, for group in n, to calculate all the aggregates
         for row in cur:
-            uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
-            for aggVar in listAggVars:
-                uniqueID = uniqueID + row[aggVar]
 
             for agg in {f}[groupVar]:
-                if {True}:   # where the conditional happens, grouped up by grouping vars
-                    if agg[1] == "count":
-                        rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
-                    if agg[1] == "sum":
-                        rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
-                    if agg[1] == "max":
-                        if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
-                            rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
-                    if agg[1] == "min":
-                        if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
-                            rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
-                    if agg[1] == "avg":
-                        rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
-                        rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
-
-        cur.execute("SELECT * FROM sales")
-        
-
-    for groupVar in range(numGroupVars): #loop to calculate avg and clean up average in rowDict`
+                for uniqueID in list(rowDict.keys()):
+                    if {suchThatList}:   # where the conditional happens, grouped up by grouping vars
+                        if agg[1] == "count":
+                            rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
+                        if agg[1] == "sum":
+                            rowDict[uniqueID][str(groupVar + 1) + "_sum_" + agg[2]] += row[agg[2]]
+                        if agg[1] == "max":
+                            if(row[agg[2]] > rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]]):
+                                rowDict[uniqueID][str(groupVar + 1) + "_max_" + agg[2]] = row[agg[2]]
+                        if agg[1] == "min":
+                            if(row[agg[2]] < rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]]):
+                                rowDict[uniqueID][str(groupVar + 1) + "_min_" + agg[2]] = row[agg[2]]
+                        if agg[1] == "avg":
+                            rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
+                            rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
+            
         for agg in {f}[groupVar]:
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
+                    #print("here")
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]])
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]])
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+                    #print(rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]])
+                    #print("there")
+        
+
+        cur.execute("SELECT * FROM sales")
     
     for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
         for agg in {f}[groupVar]:  
             for uniqueID in list(rowDict.keys()): 
-                print(list(rowDict[uniqueID].keys()))
+                # print(list(rowDict[uniqueID].keys()))
                 if not ({havingList}):
-                    print("it happened")
+                    # print("it happened")
                     del rowDict[uniqueID]
             
     for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
