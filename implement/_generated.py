@@ -27,17 +27,7 @@ def query():
     # having = 1_sum_quant >  2_sum_quant * 2 or 1_avg_quant > 3_avg_quant
     rowDict = {}  # renamed to rowDict from dict
     #dataDict = {} just data for the keys not the final value
-
-    ATTRIBUTE_INDEX = {  # use this to get the index of the database's attributes
-        'cust': 0,
-        'prod': 1,
-        'day': 2,
-        'month': 3,
-        'year': 4,
-        'state': 5,
-        'quant': 6,
-        'date': 7,
-    }
+    ATTRIBUTE_INDEX = {'cust': 0, 'prod': 1, 'day': 2, 'month': 3, 'year': 4, 'state': 5, 'quant': 6, 'date': 7}
 
     
     for row in cur: # loop to put all keys in dictionary
@@ -83,7 +73,7 @@ def query():
                 uniqueID = uniqueID + row[aggVar]
 
             for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:
-                if groupVar == 0 and (row[ATTRIBUTE_INDEX['state']]) == 'NY' or groupVar == 1 and (row[ATTRIBUTE_INDEX['state']]) == 'NJ' or groupVar == 2 and (row[ATTRIBUTE_INDEX['state']]) == 'CT':   # where the conditional happens, grouped up by grouping vars
+                if groupVar == 0 and (row[ATTRIBUTE_INDEX['state']] == 'NY') or groupVar == 1 and (row[ATTRIBUTE_INDEX['state']] == 'NJ') or groupVar == 2 and (row[ATTRIBUTE_INDEX['state']] == 'CT'):   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
                         rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
                     if agg[1] == "sum":
@@ -108,14 +98,16 @@ def query():
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =  rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] / rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+    
     for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
         for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
             for uniqueID in list(rowDict.keys()): 
-                #print(list(rowDict[uniqueID].keys()))
+                print(list(rowDict[uniqueID].keys()))
                 if not (rowDict[uniqueID]['1_sum_quant'] >  rowDict[uniqueID]['2_sum_quant'] * 2 or rowDict[uniqueID]['1_avg_quant'] > rowDict[uniqueID]['3_avg_quant']):
-                    #print("it happened")
+                    print("it happened")
                     del rowDict[uniqueID]
-    for groupVar in range(numGroupVars): # NEED ANOTHER SEREIS OF LOOP FOR NO ERROR
+            
+    for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
         for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
             for uniqueID in list(rowDict.keys()): 
                 if not ((str(groupVar + 1) + "_count_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
