@@ -183,7 +183,7 @@ def main():
                             rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                             rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
             
-        for agg in {f}[groupVar]:
+        for agg in {f}[groupVar]: #compute average so it can be used by next var if needed
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
                     #print("here")
@@ -198,27 +198,38 @@ def main():
 
         cur.execute("SELECT * FROM sales")
     
-    for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
+    for groupVar in range(numGroupVars): #having clause
         for agg in {f}[groupVar]:  
             for uniqueID in list(rowDict.keys()): 
                 # print(list(rowDict[uniqueID].keys()))
                 if not ({havingList}):
                     # print("it happened")
                     del rowDict[uniqueID]
+                    
+    for att in {selectAtts}:
+        for uniqueID in list(rowDict.keys()): 
+            if(att not in {listAggVars} and att not in {return_aggregates(f)}):
+                result = att
+                for substring in {return_aggregates(f)}: # get the 1_avg_quant stuff
+                    if substring in result:
+                        result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
+                        #print(temp)
+                rowDict[uniqueID][att] = eval(result)
             
     for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
         for agg in {f}[groupVar]:  
-            for uniqueID in list(rowDict.keys()): 
-                if not ((str(groupVar + 1) + "_count_" + agg[2]) in {selectAtts}):
-                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_count_" + agg[2], None)
-                if not ((str(groupVar + 1) + "_sum_" + agg[2]) in {selectAtts}):
-                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_sum_" + agg[2], None)
-                if not ((str(groupVar + 1) + "_max_" + agg[2]) in {selectAtts}):
-                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_max_" + agg[2], None)
-                if not ((str(groupVar + 1) + "_min_" + agg[2]) in {selectAtts}):
-                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
-                if not ((str(groupVar + 1) + "_avg_" + agg[2]) in {selectAtts}):
-                    (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
+            for uniqueID in list(rowDict.keys()):
+                if(att in {listAggVars} or att in {return_aggregates(f)}):
+                    if not ((str(groupVar + 1) + "_count_" + agg[2]) in {selectAtts}):
+                        (rowDict[uniqueID]).pop(str(groupVar + 1) + "_count_" + agg[2], None)
+                    if not ((str(groupVar + 1) + "_sum_" + agg[2]) in {selectAtts}):
+                        (rowDict[uniqueID]).pop(str(groupVar + 1) + "_sum_" + agg[2], None)
+                    if not ((str(groupVar + 1) + "_max_" + agg[2]) in {selectAtts}):
+                        (rowDict[uniqueID]).pop(str(groupVar + 1) + "_max_" + agg[2], None)
+                    if not ((str(groupVar + 1) + "_min_" + agg[2]) in {selectAtts}):
+                        (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
+                    if not ((str(groupVar + 1) + "_avg_" + agg[2]) in {selectAtts}):
+                        (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
     print(rowDict.keys())
 
     
