@@ -2,6 +2,8 @@
 2025-12-19
 CS562 Database Management Systems II
 Anthony Santilli and Colby Foster
+20024679
+20014874
 '''
 import re
 import sys
