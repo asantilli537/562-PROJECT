@@ -17,7 +17,6 @@ This generates a table output given a phi operator - MF (not EMF)
 def format_suchthat(suchthat, F_list, attrs):
     '''
     Format the suchthat list into a conditional to be processed.
-
     '''
     #print("SUCHTHAT: " + str(suchthat))
     finalList = ""
@@ -47,10 +46,10 @@ def format_suchthat(suchthat, F_list, attrs):
         tmplist.append(tmpstring)
 
     finalList = tmplist[0]
-    for c in tmplist[1:]:
+    for c in tmplist[1:]: # add all conditional statements together, return as one string
         finalList += " or " + c
 
-    print(finalList)
+    # print(finalList)
     return finalList
 
 def return_aggregates(F):
@@ -247,7 +246,7 @@ def main():
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
                     if not ((str(groupVar + 1) + "_avg_" + agg[2]) in {selectAtts}):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
-    print(rowDict.keys())
+    # print(rowDict.keys())
 
     
     """

@@ -46,7 +46,7 @@ def format_suchthat(suchthat, F_list, attrs):
         tmplist.append(tmpstring)
 
     finalList = tmplist[0]
-    for c in tmplist[1:]:
+    for c in tmplist[1:]: # add all conditional statements together, return as one string
         finalList += " or " + c
 
     print(finalList)
@@ -92,8 +92,7 @@ def format_having(data, listAggVars, F_list):
     
     result = (re.sub(r'(?<![<>=!])=(?![=])', '==', result)) # turn any isolated = into ==
     
-    print(result)
-    
+    # print(result)
     return result
 
 def main():
@@ -242,7 +241,7 @@ def main():
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
                     if not ((str(groupVar + 1) + "_avg_" + agg[2]) in {selectAtts}):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
-    print(rowDict.keys())
+    # print(rowDict.keys())
 
     
     """
