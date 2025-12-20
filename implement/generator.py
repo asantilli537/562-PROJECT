@@ -4,8 +4,7 @@ import sys
 from readinput import print_results, read_from_file, read_from_input, mf_structure
 
 '''
-For the file inputs of mf_example, i'm also going to say that the SUCHTHAT
-needs to have spaces between characters, and this is how format_conditionals() operates.
+This generates a table output given a phi operator - MF (not EMF)
 '''
 
 
@@ -61,6 +60,16 @@ def return_aggregates(F):
     return tempList
 
 def format_having(data, listAggVars, F_list):
+    """upates having string from makes-sense-to-user to makes-sense-to-machine 
+
+    Args:
+        data (str): having string
+        listAggVars (list str): agg vars
+        F_list (list str): agg funcs
+
+    Returns:
+        string: updated having string
+    """
     # takes having clause and F list
     if data == None:
         # print("NO HAVING HERE")
@@ -143,8 +152,8 @@ def main():
         #     # print(str(index) + ": ADD " + str(row[index]))
         #     rowDict[uniqueID][row[index]] = row[index]   # replaced with index
 
-        for groupVar in range(numGroupVars):   # for group in n
-            for agg in {f}[groupVar]:
+        for groupVar in range(numGroupVars):   # for every grouping var
+            for agg in {f}[groupVar]: #for every agg of a grouping var
                 if agg[1] == "count":
                     rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] = 0
                 if agg[1] == "sum":
@@ -159,17 +168,17 @@ def main():
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
 
                                         
-    cur.execute("SELECT * FROM sales")
+    cur.execute("SELECT * FROM sales") #reset cursor
 
 
     
     for groupVar in range(numGroupVars): #loop, for group in n, to calculate all the aggregates
-        for row in cur:
-            uniqueID = "" # this is gonna be a combination of the agg vars for the rowDict key
-            for aggVar in listAggVars:
+        for row in cur: #go through whole table
+            uniqueID = "" # basically this is what makes it a MF query
+            for aggVar in listAggVars: 
                 uniqueID = uniqueID + str(row[aggVar])
 
-            for agg in {f}[groupVar]:
+            for agg in {f}[groupVar]: #go through all aggs we need to compute for this groupVar
                 if {suchThatList}:   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
                         rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
@@ -185,7 +194,7 @@ def main():
                         rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                         rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
         
-        for agg in {f}[groupVar]:
+        for agg in {f}[groupVar]: #compute average so it can be used by next var if needed
             for uniqueID in list(rowDict.keys()):
                 if agg[1] == "avg":
                     #print("here")
@@ -198,9 +207,9 @@ def main():
                     #print("there")
         
 
-        cur.execute("SELECT * FROM sales")
+        cur.execute("SELECT * FROM sales") #reset cursor
     
-    for groupVar in range(numGroupVars): # have to run a second series of loops to allow averages to be computed first before having
+    for groupVar in range(numGroupVars): #compute having clause
         for agg in {f}[groupVar]:  
             for uniqueID in list(rowDict.keys()): 
                 # print(list(rowDict[uniqueID].keys()))
@@ -208,7 +217,7 @@ def main():
                     # print("it happened")
                     del rowDict[uniqueID]
                     
-    for att in {selectAtts}:
+    for att in {selectAtts}: #make it possible to do things like 1_sum_avg / 2_sum_avg in S
         for uniqueID in list(rowDict.keys()): 
             if(att not in {listAggVars} and att not in {return_aggregates(f)}):
                 result = att
@@ -218,7 +227,7 @@ def main():
                         #print(temp)
                 rowDict[uniqueID][att] = eval(result)
             
-    for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
+    for groupVar in range(numGroupVars): # clean up unneeded things
         for agg in {f}[groupVar]:  
             for uniqueID in list(rowDict.keys()): 
                 if(att in {listAggVars} or att in {return_aggregates(f)}):
