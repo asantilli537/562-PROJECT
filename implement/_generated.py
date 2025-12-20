@@ -47,8 +47,8 @@ def query():
         #     # print(str(index) + ": ADD " + str(row[index]))
         #     rowDict[uniqueID][row[index]] = row[index]   # replaced with index
 
-        for groupVar in range(numGroupVars):   # for group in n
-            for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:
+        for groupVar in range(numGroupVars):   # for every grouping var
+            for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]: #for every agg of a grouping var
                 if agg[1] == "count":
                     rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] = 0
                 if agg[1] == "sum":
@@ -63,14 +63,14 @@ def query():
                     rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
 
                                         
-    cur.execute("SELECT * FROM sales")
+    cur.execute("SELECT * FROM sales") #reset cursor
 
 
     
     for groupVar in range(numGroupVars): #loop, for group in n, to calculate all the aggregates
         for row in cur:
 
-            for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:
+            for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:  #go through all aggs we need to compute for this groupVar
                 for uniqueID in list(rowDict.keys()):
                     if groupVar == 0 and (row[ATTRIBUTE_INDEX['cust']] == row[ATTRIBUTE_INDEX['cust']]) or groupVar == 1 and (row[ATTRIBUTE_INDEX['cust']] == rowDict[uniqueID]['cust'] and row[ATTRIBUTE_INDEX['month']] <= 6  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_max_quant'] / 2) or groupVar == 2 and (row[ATTRIBUTE_INDEX['cust']] == rowDict[uniqueID]['cust'] and row[ATTRIBUTE_INDEX['month']] >= 7  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_max_quant'] / 2):   # where the conditional happens, grouped up by grouping vars
                         if agg[1] == "count":
@@ -110,7 +110,7 @@ def query():
                     # print("it happened")
                     del rowDict[uniqueID]
                     
-    for att in ['cust', '2_count_quant', '3_count_quant']:
+    for att in ['cust', '2_count_quant', '3_count_quant']: #make it possible to do things like 1_sum_avg / 2_sum_avg in S
         for uniqueID in list(rowDict.keys()): 
             if(att not in ['cust'] and att not in ['1_max_quant', '2_count_quant', '3_count_quant']):
                 result = att
@@ -120,7 +120,7 @@ def query():
                         #print(temp)
                 rowDict[uniqueID][att] = eval(result)
             
-    for groupVar in range(numGroupVars): # NEED ANOTHER SERIES OF LOOP FOR NO ERROR
+    for groupVar in range(numGroupVars): # clean up unneeded things
         for agg in [[('1', 'max', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:  
             for uniqueID in list(rowDict.keys()):
                 if(att in ['cust'] or att in ['1_max_quant', '2_count_quant', '3_count_quant']):

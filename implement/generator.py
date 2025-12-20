@@ -1,4 +1,8 @@
-import subprocess
+'''
+2025-12-19
+CS562 Database Management Systems II
+Anthony Santilli and Colby Foster
+'''
 import re
 import sys
 from readinput import print_results, read_from_file, read_from_input, mf_structure

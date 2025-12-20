@@ -1,4 +1,8 @@
-import subprocess
+'''
+2025-12-19
+CS562 Database Management Systems II
+Anthony Santilli and Colby Foster
+'''
 import re
 import sys
 from readinput import print_results, read_from_file, read_from_input, mf_structure
@@ -11,7 +15,6 @@ This generates a table output given a phi operator - MF (not EMF)
 def format_suchthat(suchthat, F_list, attrs):
     '''
     Format the suchthat list into a conditional to be processed.
-
     '''
     #print("SUCHTHAT: " + str(suchthat))
     finalList = ""
@@ -25,12 +28,12 @@ def format_suchthat(suchthat, F_list, attrs):
         condstring = tmpstring.split(" ")
         othertmp = []
         for substring in condstring:
-            if "." in substring:
+            if "." in substring:  # for any strings like 1.cust
                 first = int(substring.split(".")[0])
                 attr = substring.split(".")[1]
                 substring = "row[ATTRIBUTE_INDEX['" + attr + "']]"
             else:
-                if substring in attrs or substring in aggList:
+                if substring in attrs or substring in aggList:   # for any strings like 1_avg_quant or isolated cust / month
                     substring = "rowDict[uniqueID]['" + substring + "']"
             othertmp.append(substring)
             finalstr = " ".join(othertmp)
@@ -48,10 +51,8 @@ def format_suchthat(suchthat, F_list, attrs):
     return finalList
 
 def return_aggregates(F):
-
     '''
-    since this function is used twice I'm just gonna extract it here
-    formats the aggregates back into their original strings (1_sum_quant)
+    Function to process the aggregate strings back into their original strings (1_sum_quant)
     '''
     tempList = []
     for x in F:
