@@ -194,7 +194,7 @@ def main():
             
         for agg in {f}[groupVar]: #compute average so it can be used by next var if needed
             for uniqueID in list(rowDict.keys()):
-                if agg[1] == "avg":
+                if agg[1] == "avg" and rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] > 0:
                     #print("here")
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]])
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]])
@@ -203,6 +203,11 @@ def main():
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]])
                     #print("there")
+                else:
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
+                    del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
+        
         
 
         cur.execute("SELECT * FROM sales")
