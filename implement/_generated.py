@@ -23,8 +23,8 @@ def query():
     
     listAggVars = ['cust']
     numGroupVars = 3
-    suchthat = ['1.cust = 1.cust', '2.month <= 6  and 2.quant > 1_avg_quant', '3.month >= 7  and 3.quant > 1_avg_quant']
-    # having = None
+    suchthat = ["1.state = 'NY'", "2.state = 'NJ'", "3.state = 'CT'"]
+    # having = 1_sum_quant >  2_sum_quant * 2 or 1_avg_quant > 3_avg_quant
     rowDict = {}  # renamed to rowDict from dict
     #dataDict = {} just data for the keys not the final value
     ATTRIBUTE_INDEX = {'cust': 0, 'prod': 1, 'day': 2, 'month': 3, 'year': 4, 'state': 5, 'quant': 6, 'date': 7}
@@ -48,7 +48,7 @@ def query():
         #     rowDict[uniqueID][row[index]] = row[index]   # replaced with index
 
         for groupVar in range(numGroupVars):   # for every grouping var
-            for agg in [[('1', 'avg', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]: #for every agg of a grouping var
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]: #for every agg of a grouping var
                 if agg[1] == "count":
                     rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] = 0
                 if agg[1] == "sum":
@@ -73,8 +73,8 @@ def query():
             for aggVar in listAggVars: 
                 uniqueID = uniqueID + str(row[aggVar])
 
-            for agg in [[('1', 'avg', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]: #go through all aggs we need to compute for this groupVar
-                if groupVar == 0 and (row[ATTRIBUTE_INDEX['cust']] == row[ATTRIBUTE_INDEX['cust']]) or groupVar == 1 and (row[ATTRIBUTE_INDEX['month']] <= 6  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_avg_quant']) or groupVar == 2 and (row[ATTRIBUTE_INDEX['month']] >= 7  and row[ATTRIBUTE_INDEX['quant']] > rowDict[uniqueID]['1_avg_quant']):   # where the conditional happens, grouped up by grouping vars
+            for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]: #go through all aggs we need to compute for this groupVar
+                if groupVar == 0 and (row[ATTRIBUTE_INDEX['state']] == 'NY') or groupVar == 1 and (row[ATTRIBUTE_INDEX['state']] == 'NJ') or groupVar == 2 and (row[ATTRIBUTE_INDEX['state']] == 'CT'):   # where the conditional happens, grouped up by grouping vars
                     if agg[1] == "count":
                         rowDict[uniqueID][str(groupVar + 1) + "_count_" + agg[2]] += 1
                     if agg[1] == "sum":
@@ -89,9 +89,9 @@ def query():
                         rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]] += row[agg[2]]
                         rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] += 1
         
-        for agg in [[('1', 'avg', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]: #compute average so it can be used by next var if needed
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]: #compute average so it can be used by next var if needed
             for uniqueID in list(rowDict.keys()):
-                if agg[1] == "avg":
+                if agg[1] == "avg" and rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]] > 0:
                     #print("here")
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]])
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]])
@@ -100,41 +100,45 @@ def query():
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]])
                     #print("there")
+                elif agg[1] == "avg":
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =
+                    del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
+                    del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
         
 
         cur.execute("SELECT * FROM sales") #reset cursor
     
     for groupVar in range(numGroupVars): #compute having clause
-        for agg in [[('1', 'avg', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:  
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
             for uniqueID in list(rowDict.keys()): 
                 # print(list(rowDict[uniqueID].keys()))
-                if not (True):
+                if not (rowDict[uniqueID]['1_sum_quant'] >  rowDict[uniqueID]['2_sum_quant'] * 2 or rowDict[uniqueID]['1_avg_quant'] > rowDict[uniqueID]['3_avg_quant']):
                     # print("it happened")
                     del rowDict[uniqueID]
                     
-    for att in ['cust', '2_count_quant', '3_count_quant']: #make it possible to do things like 1_sum_avg / 2_sum_avg in S
+    for att in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']: #make it possible to do things like 1_sum_avg / 2_sum_avg in S
         for uniqueID in list(rowDict.keys()): 
-            if(att not in ['cust'] and att not in ['1_avg_quant', '2_count_quant', '3_count_quant']):
+            if(att not in ['cust'] and att not in ['1_sum_quant', '1_avg_quant', '2_sum_quant', '3_sum_quant', '3_avg_quant']):
                 result = att
-                for substring in ['1_avg_quant', '2_count_quant', '3_count_quant']: # get the 1_avg_quant stuff
+                for substring in ['1_sum_quant', '1_avg_quant', '2_sum_quant', '3_sum_quant', '3_avg_quant']: # get the 1_avg_quant stuff
                     if substring in result:
                         result = result.replace(substring, "rowDict[uniqueID]['" + substring + "']")
                         #print(temp)
                 rowDict[uniqueID][att] = eval(result)
             
     for groupVar in range(numGroupVars): # clean up unneeded things
-        for agg in [[('1', 'avg', 'quant')], [('2', 'count', 'quant')], [('3', 'count', 'quant')]][groupVar]:  
+        for agg in [[('1', 'sum', 'quant'), ('1', 'avg', 'quant')], [('2', 'sum', 'quant')], [('3', 'sum', 'quant'), ('3', 'avg', 'quant')]][groupVar]:  
             for uniqueID in list(rowDict.keys()): 
-                if(att in ['cust'] or att in ['1_avg_quant', '2_count_quant', '3_count_quant']):
-                    if not ((str(groupVar + 1) + "_count_" + agg[2]) in ['cust', '2_count_quant', '3_count_quant']):
+                if(att in ['cust'] or att in ['1_sum_quant', '1_avg_quant', '2_sum_quant', '3_sum_quant', '3_avg_quant']):
+                    if not ((str(groupVar + 1) + "_count_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_count_" + agg[2], None)
-                    if not ((str(groupVar + 1) + "_sum_" + agg[2]) in ['cust', '2_count_quant', '3_count_quant']):
+                    if not ((str(groupVar + 1) + "_sum_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_sum_" + agg[2], None)
-                    if not ((str(groupVar + 1) + "_max_" + agg[2]) in ['cust', '2_count_quant', '3_count_quant']):
+                    if not ((str(groupVar + 1) + "_max_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_max_" + agg[2], None)
-                    if not ((str(groupVar + 1) + "_min_" + agg[2]) in ['cust', '2_count_quant', '3_count_quant']):
+                    if not ((str(groupVar + 1) + "_min_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_min_" + agg[2], None)
-                    if not ((str(groupVar + 1) + "_avg_" + agg[2]) in ['cust', '2_count_quant', '3_count_quant']):
+                    if not ((str(groupVar + 1) + "_avg_" + agg[2]) in ['cust', '1_sum_quant', '2_sum_quant', '3_sum_quant']):
                         (rowDict[uniqueID]).pop(str(groupVar + 1) + "_avg_" + agg[2], None)
     print(rowDict.keys())
 
