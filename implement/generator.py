@@ -205,8 +205,8 @@ def main():
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
                     #print(rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]])
                     #print("there")
-                else:
-                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] = 0
+                elif agg[1] == "avg":
+                    rowDict[uniqueID][str(groupVar + 1) + "_avg_" + agg[2]] =
                     del rowDict[uniqueID][str(groupVar + 1) + "_sumAvg_" + agg[2]]
                     del rowDict[uniqueID][str(groupVar + 1) + "_countAvg_" + agg[2]]
         
